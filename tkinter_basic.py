@@ -11,10 +11,22 @@ window.configure(bg="pink")
 label = ttk.Label(master = window, text = "Welcome to My Page", font = "Arial 12 italic", background= "pink")
 label.pack( padx=10, pady=10)
 
-button = ttk.Button(master = window, text = "Close", command = window.destroy)
+button = ttk.Button(master = window, text = "Close", width=25, command = window.destroy)
 button.pack( padx=10, pady=10)
 
 textbox = ttk.Entry(master=window, font= "Calibri 14 bold")
 textbox.pack( padx=10, pady=10)
+
+
+
+var1 = IntVar()
+var2 = IntVar()
+
+cb1 = tk.Checkbutton(window, text = "BAseball", variable=var1)
+cb1 = tk.Checkbutton(window, text = "Volleyball", variable=var2)
+
+
+sex = IntVar8()
+
 
 window.mainloop()

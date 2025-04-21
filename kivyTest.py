@@ -5,7 +5,7 @@ from kivy.uix.label import Label
 
 class MyApp(App):
     def build(self):
-        return Label(text="tech with tim")
+        return Label(text="KIVY window")
 
 
 if __name__ == "__main__":
