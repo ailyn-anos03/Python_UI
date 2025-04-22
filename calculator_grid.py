@@ -18,6 +18,7 @@ result = tk.StringVar()
 entry = tk.Entry(window, textvar=result, font=("Arial", 20), justify="right")
 entry.grid(row=0, column=0, columnspan=4)
 
+#List of buttons
 
 buttons = [
     ("7", 1, 0), ("8", 1, 1), ("9", 1, 2), ("/", 1, 3),
@@ -31,6 +32,5 @@ for text, row, col in buttons:
     button = tk.Button(window, text=text, font=("Arial", 20), width=5, height=2)
     button.grid(row=row, column=col, padx=5, pady=5)
     button.config(command=lambda t=text: result.set(result.get() + t) if t != "=" else calculate())
-
-# Run the application
+    
 window.mainloop()
