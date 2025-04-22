@@ -19,14 +19,15 @@ textbox.pack( padx=10, pady=10)
 
 
 
-var1 = IntVar()
-var2 = IntVar()
+var1 = tk.IntVar()
+var2 = tk.IntVar()
 
-cb1 = tk.Checkbutton(window, text = "BAseball", variable=var1)
+cb1 = tk.Checkbutton(window, text = "Baseball", variable=var1)
 cb1 = tk.Checkbutton(window, text = "Volleyball", variable=var2)
+cb1.pack( padx=10, pady=10)
 
 
-sex = IntVar8()
+sex = tk.IntVar()
 
 
 window.mainloop()
