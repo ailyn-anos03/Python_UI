@@ -92,8 +92,9 @@ tk.Button(window, text="Edit", command=edit_item).grid(row=4, column=2, pady=5)
 tk.Button(window, text="Delete", command=delete_item).grid(row=4, column=3, pady=5)
 tk.Button(window, text="Update", command=update_item).grid(row=4, column=4, pady=5)
 
-img = tk.PhotoImage(file = r'C:\Users\Deign\Pictures\Screenshots\logo.png')
-img1 = img.subsample(2,2)
+img = tk.PhotoImage(file = r'C:\Users\Deign\Pictures\Screenshots\avatar.png')
+img1 = img.subsample(3, 3)
+tk.Label(window, image=img1, bg="AntiqueWhite2").grid(row=0, column=2, rowspan=3, padx=10)
 
 
 tree = ttk.Treeview(window, columns=("Item", "Quantity", "Price"), show="headings")
