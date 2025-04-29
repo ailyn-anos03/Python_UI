@@ -108,5 +108,39 @@ for col in ("Item", "Quantity", "Price"):
 tree.grid(row=5, column=0, columnspan=5)
 
 view_data()
+def update_total():
+    total = 0
+    for row_index, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+        if row[1] is not None and row[2] is not None:  # Ensure quantity and price are not None
+            try:
+                quantity = float(row[1])
+                price = float(row[2])
+                total += quantity * price
+            except ValueError:
+                continue  # Skip rows with invalid data
+
+    total_row = ["Total", "", f"{total:.2f}"]
+
+    # Remove any existing total row
+    for row_index, row in enumerate(ws.iter_rows(min_row=2, max_row=ws.max_row, values_only=True), start=2):
+        if row[0] == "Total":
+            ws.delete_rows(row_index)
+            break
+
+    # Append the new total row
+    ws.append(total_row)
+    wb.save("inventory.xlsx")
+
+    # Update the Treeview
+    tree.delete(*tree.get_children())
+    for row_index, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+        tree.insert("", "end", values=row, iid=str(row_index))
+
+# Call update_total after adding or refreshing data
+view_data()
+update_total()
+
+
+
 
 window.mainloop()
