@@ -105,7 +105,25 @@ style.configure("Treeview.Heading", foreground="black", background="pink3")
 
 for col in ("Item", "Quantity", "Price"):
     tree.heading(col, text=col)
-tree.grid(row=5, column=0, columnspan=5)
+tree.grid(row=7, column=0, columnspan=5)
+
+
+def search(event):
+    query = entry.get().lower()
+    tree.delete(*tree.get_children())  # Clear current rows
+
+    for row_index, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+        if query in str(row[0]).lower():  # Searching by item name (column 1)
+            tree.insert("", "end", values=row, iid=str(row_index))
+
+label =tk.Label(window, text="Search", bg="AntiqueWhite2", font="Times 11")
+label.grid(row=6, column=0, pady=5)
+entry = tk.Entry(window, font="Times 11", justify="left")
+entry.grid(row=6, column=1, columnspan=5, pady=5, sticky="we")
+entry.bind("<KeyRelease>", search)
+
+
+
 
 view_data()
 def update_total():
