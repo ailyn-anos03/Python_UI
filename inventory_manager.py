@@ -2,7 +2,10 @@ import tkinter as tk
 from tkinter import ttk
 from openpyxl import load_workbook, Workbook
 
-
+window = tk.Tk()
+window.title("First Window")
+# window.title("Inventory Management")
+window.configure(bg="AntiqueWhite2")
 
 
 try:
@@ -70,10 +73,9 @@ def clear_entries():
     entry_quantity.delete(0, tk.END)
     entry_price.delete(0, tk.END)
 
-# GUI Setup
-window = tk.Tk()
-window.title("Inventory Management")
-window.configure(bg="AntiqueWhite2")
+
+
+
 
 tk.Label(window, text="Item", bg="AntiqueWhite2", font="Times 11").grid(row=0, column=0)
 tk.Label(window, text="Quantity", bg="AntiqueWhite2", font="Times 11").grid(row=1, column=0)
@@ -110,42 +112,40 @@ tree.grid(row=7, column=0, columnspan=5)
 
 def search(event):
     query = entry.get().lower()
-    tree.delete(*tree.get_children())  # Clear current rows
+    tree.delete(*tree.get_children())  
 
     for row_index, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
-        if query in str(row[0]).lower():  # Searching by item name (column 1)
+        if query in str(row[0]).lower(): 
             tree.insert("", "end", values=row, iid=str(row_index))
 
 label =tk.Label(window, text="Search", bg="AntiqueWhite2", font="Times 11")
 label.grid(row=6, column=0, pady=5)
-entry = tk.Entry(window, font="Times 11", justify="left")
+entry = tk.Entry(window, font="Times 11", justify="right")
 entry.grid(row=6, column=1, columnspan=5, pady=5, sticky="we")
 entry.bind("<KeyRelease>", search)
 
-
-
-
 view_data()
+
+
 def update_total():
     total = 0
     for row_index, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
-        if row[1] is not None and row[2] is not None:  # Ensure quantity and price are not None
+        if row[1] is not None and row[2] is not None:  
             try:
                 quantity = float(row[1])
                 price = float(row[2])
                 total += quantity * price
             except ValueError:
-                continue  # Skip rows with invalid data
+                continue
 
     total_row = ["Total", "", f"{total:.2f}"]
 
-    # Remove any existing total row
+ 
     for row_index, row in enumerate(ws.iter_rows(min_row=2, max_row=ws.max_row, values_only=True), start=2):
         if row[0] == "Total":
             ws.delete_rows(row_index)
             break
 
-    # Append the new total row
     ws.append(total_row)
     wb.save("inventory.xlsx")
 
@@ -154,7 +154,7 @@ def update_total():
     for row_index, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
         tree.insert("", "end", values=row, iid=str(row_index))
 
-# Call update_total after adding or refreshing data
+
 view_data()
 update_total()
 
