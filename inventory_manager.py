@@ -68,19 +68,19 @@ def delete_item():
     global selected_item_index
     selected = tree.selection()
     if selected:
-        row_index = int(selected[0])  # Get row index
-        ws.delete_rows(row_index)  # Remove correct row
+        row_index = int(selected[0])  
+        ws.delete_rows(row_index)  
         wb.save("inventory.xlsx")
-        tree.delete(selected[0])  # Remove from UI5
-        selected_item_index = None  # Reset after deletion
-        update_total()  # Update total after deleting an item
-        selected_item_index = None  # Reset after deletion
+        tree.delete(selected[0])  
+        selected_item_index = None  
+        update_total()  
+        selected_item_index = None  
 
 def edit_item():
     global selected_item_index
     selected = tree.selection()
     if selected:
-        selected_item_index = int(selected[0])  # Store row index
+        selected_item_index = int(selected[0])  
         values = tree.item(selected[0], "values")
         entry_item.delete(0, tk.END)
         entry_item.insert(0, values[0])
@@ -99,7 +99,7 @@ def update_item():
             wb.save("inventory.xlsx")
             clear_entries()
             selected_item_index = None 
-            update_total()  # Update total after updating an item
+            update_total() 
             clear_entries()
             selected_item_index = None 
 
@@ -247,7 +247,7 @@ def log_action(action, item, quantity, price):
 # Update existing functions to log actions
 def add_item_with_logging():
     item, quantity, price = entry_item.get(), entry_quantity.get(), entry_price.get()
-    add_item()  # Call the original add_item function
+    add_item()  # add_item function
     if item and quantity and price:
         log_action("Add", item, quantity, price)
 
@@ -256,18 +256,18 @@ def delete_item_with_logging():
     selected = tree.selection()
     if selected:
         values = tree.item(selected[0], "values")
-        delete_item()  # Call the original delete_item function
+        delete_item()  # delete_item function
         log_action("Delete", values[0], values[1], values[2])
 
 def update_item_with_logging():
     global selected_item_index
     if selected_item_index:
         new_values = (entry_item.get(), entry_quantity.get(), entry_price.get())
-        update_item()  # Call the original update_item function
+        update_item()  # update_item function
         if all(new_values):
             log_action("Update", new_values[0], new_values[1], new_values[2])
 
-# Replace the button commands to use the new functions
+# Replace the button commands to connect in new function 
 tk.Button(tab2, text="Add", command=add_item_with_logging, bg="AntiqueWhite2", relief="flat", font="Arial 10").grid(row=4, column=0, pady=5, sticky="we")
 tk.Button(tab2, text="Delete", command=delete_item_with_logging, bg="AntiqueWhite2", relief="flat", font="Arial 10").grid(row=4, column=3, pady=5, sticky="we")
 tk.Button(tab2, text="Update", command=update_item_with_logging, bg="AntiqueWhite2", relief="flat", font="Arial 10").grid(row=4, column=4, pady=5, sticky="we")
