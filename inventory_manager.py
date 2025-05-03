@@ -1,6 +1,8 @@
 import tkinter as tk
 from tkinter import ttk
 from openpyxl import load_workbook, Workbook
+from datetime import datetime
+from tkinter import messagebox
 
 window = tk.Tk()
 window.title("Inventory Manager")
@@ -213,6 +215,66 @@ def update_total():
     
     view_data()
 
+
+# Tab 3 - History
+
+label2 = tk.Label(tab3, text="History", bg="AntiqueWhite2", font="Arial 14 bold")
+label2.grid(row=0, column=0, padx=10, pady=10)
+
+history_tree = ttk.Treeview(tab3, columns=("Action", "Item", "Quantity", "Price", "Timestamp"), show="headings")
+history_tree.grid(row=1, column=0, columnspan=5, sticky="nsew")
+
+for col in ("Action", "Item", "Quantity", "Price", "Timestamp"):
+    history_tree.heading(col, text=col)
+
+tab3.grid_columnconfigure(0, weight=1)
+tab3.grid_rowconfigure(1, weight=1)
+
+# Create a new worksheet for history if it doesn't exist
+if "History" not in wb.sheetnames:
+    history_ws = wb.create_sheet("History")
+    history_ws.append(["Action", "Item", "Quantity", "Price", "Timestamp"])
+else:
+    history_ws = wb["History"]
+
+def log_action(action, item, quantity, price):
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    history_ws.append([action, item, quantity, price, timestamp])
+    wb.save("inventory.xlsx")
+    history_tree.insert("", "end", values=(action, item, quantity, price, timestamp))
+    messagebox.showinfo("Action Logged", f"{action} action performed on item '{item}'.")
+
+# Update existing functions to log actions
+def add_item_with_logging():
+    item, quantity, price = entry_item.get(), entry_quantity.get(), entry_price.get()
+    add_item()  # Call the original add_item function
+    if item and quantity and price:
+        log_action("Add", item, quantity, price)
+
+def delete_item_with_logging():
+    global selected_item_index
+    selected = tree.selection()
+    if selected:
+        values = tree.item(selected[0], "values")
+        delete_item()  # Call the original delete_item function
+        log_action("Delete", values[0], values[1], values[2])
+
+def update_item_with_logging():
+    global selected_item_index
+    if selected_item_index:
+        new_values = (entry_item.get(), entry_quantity.get(), entry_price.get())
+        update_item()  # Call the original update_item function
+        if all(new_values):
+            log_action("Update", new_values[0], new_values[1], new_values[2])
+
+# Replace the button commands to use the new functions
+tk.Button(tab2, text="Add", command=add_item_with_logging, bg="AntiqueWhite2", relief="flat", font="Arial 10").grid(row=4, column=0, pady=5, sticky="we")
+tk.Button(tab2, text="Delete", command=delete_item_with_logging, bg="AntiqueWhite2", relief="flat", font="Arial 10").grid(row=4, column=3, pady=5, sticky="we")
+tk.Button(tab2, text="Update", command=update_item_with_logging, bg="AntiqueWhite2", relief="flat", font="Arial 10").grid(row=4, column=4, pady=5, sticky="we")
+
+# Load history data into the history_tree
+for row in history_ws.iter_rows(min_row=2, values_only=True):
+    history_tree.insert("", "end", values=row)
 
 view_data()
 update_total()
