@@ -13,9 +13,9 @@ tab1 = tk.Frame(notebook, bg="AntiqueWhite2")
 tab2 = tk.Frame(notebook, bg="AntiqueWhite2")
 tab3 = tk.Frame(notebook, bg="AntiqueWhite2")
 
-notebook.add(tab1, text="Tab 1")
-notebook.add(tab2, text="Tab 2")
-notebook.add(tab3, text="Tab 3")
+notebook.add(tab1, text="Home")
+notebook.add(tab2, text="Input")
+notebook.add(tab3, text="Hisory")
 style = ttk.Style()
 style.theme_use("clam")  
 
@@ -108,41 +108,57 @@ def clear_entries():
 
 
 
+# Tab 1 - Home
 
+label1 = tk.Label(tab1, text="Inventory Management", bg="AntiqueWhite2", font="Arial 14 bold")
+label1.grid(row=0, column=0, padx=10, pady=10)
 
-tk.Label(tab1, text="Item", bg="AntiqueWhite2", font="Times 11").grid(row=0, column=0, sticky="w")
-tk.Label(tab1, text="Quantity", bg="AntiqueWhite2", font="Times 11").grid(row=1, column=0, sticky="w")
-tk.Label(tab1, text="Price", bg="AntiqueWhite2", font="Times 11").grid(row=2, column=0, sticky="w")
+button_list = [
+    ("Inventory", lambda: notebook.select(tab2), "raised", "RosyBrown2"),
+    ("History", lambda: notebook.select(tab3), "raised", "RosyBrown2"),
+]
 
-entry_item, entry_quantity, entry_price = tk.Entry(tab1, font="Times 11", justify="right"), tk.Entry(tab1, font="Times 11", justify="right"), tk.Entry(tab1, font="Times 11", justify="right")
+for i, (text, command, relief, bg) in enumerate(button_list, start=1):
+    button = tk.Button(tab1, text=text, command=command, relief=relief, bg=bg)
+    button.grid(row=i, column=0, padx=10, pady=5, sticky="we")
+ 
+    
 
-entry_item.grid(row=0, column=1, pady=5, sticky="we")
-entry_quantity.grid(row=1, column=1, pady=5, sticky="we")
-entry_price.grid(row=2, column=1, pady=5, sticky="we")
+#Tab 2 - Input
 
-tk.Button(tab1, text="Add", command=add_item).grid(row=4, column=0, pady=5, sticky="we")
-tk.Button(tab1, text="Refresh", command=view_data).grid(row=4, column=1, pady=5, sticky="we")
-tk.Button(tab1, text="Edit", command=edit_item).grid(row=4, column=2, pady=5, sticky="we")
-tk.Button(tab1, text="Delete", command=delete_item).grid(row=4, column=3, pady=5, sticky="we")
-tk.Button(tab1, text="Update", command=update_item).grid(row=4, column=4, pady=5, sticky="we")
+tk.Label(tab2, text="Item", bg="AntiqueWhite2", font="Calibri 11").grid(row=0, column=0, sticky="w")
+tk.Label(tab2, text="Quantity", bg="AntiqueWhite2", font="Calibri 11").grid(row=1, column=0, sticky="w")
+tk.Label(tab2, text="Price", bg="AntiqueWhite2", font="Calibri 11").grid(row=2, column=0, sticky="w")
 
-img = tk.PhotoImage(file=r'C:\Users\Deign\Pictures\Screenshots\avatar.png')
-img1 = img.subsample(3, 3)
-tk.Label(tab1, image=img1, bg="AntiqueWhite2").grid(row=0, column=2, rowspan=3, padx=10, sticky="nsew")
+entry_item, entry_quantity, entry_price = tk.Entry(tab2, font="Times 11", justify="left"), tk.Entry(tab2, font="Times 11", justify="left"), tk.Entry(tab2, font="Times 11", justify="left")
 
-tree = ttk.Treeview(tab1, columns=("Item", "Quantity", "Price"), show="headings")
+entry_item.grid(row=0, column=1, sticky="we")
+entry_quantity.grid(row=1, column=1,  sticky="we")
+entry_price.grid(row=2, column=1, sticky="we")
+
+tk.Button(tab2, text="Add", command=add_item, bg="AntiqueWhite2", relief="flat", font="Arial 10").grid(row=4, column=0, pady=5, sticky="we")
+tk.Button(tab2, text="Refresh", command=view_data, bg="AntiqueWhite2", relief="flat",font="Arial 10").grid(row=4, column=1, pady=5, sticky="we")
+tk.Button(tab2, text="Edit", command=edit_item, bg="AntiqueWhite2", relief="flat",font="Arial 10").grid(row=4, column=2, pady=5, sticky="we")
+tk.Button(tab2, text="Delete", command=delete_item, bg="AntiqueWhite2", relief="flat",font="Arial 10").grid(row=4, column=3, pady=5, sticky="we")
+tk.Button(tab2, text="Update", command=update_item, bg="AntiqueWhite2", relief="flat",font="Arial 10").grid(row=4, column=4, pady=5, sticky="we")
+ 
+# img = tk.PhotoImage(file=r'C:\Users\Deign\Pictures\Screenshots\avatar.png')
+# img1 = img.subsample(4, 6)
+# tk.Label(tab2, image=img1, bg="AntiqueWhite2").grid(row=0, column=2, rowspan=3, padx=10, sticky="nsew")
+
+tree = ttk.Treeview(tab2, columns=("Item", "Quantity", "Price"), show="headings")
 style = ttk.Style()
 style.theme_use("clam")
 style.configure("Treeview.Heading", foreground="black", background="pink3")
 tree.grid(row=7, column=0, columnspan=5, sticky="nsew")
 
 # Configure column and row weights to make widgets stretchable
-tab1.grid_columnconfigure(0, weight=1)
-tab1.grid_columnconfigure(1, weight=2)
-tab1.grid_columnconfigure(2, weight=1)
-tab1.grid_columnconfigure(3, weight=1)
-tab1.grid_columnconfigure(4, weight=1)
-tab1.grid_rowconfigure(7, weight=1)
+tab2.grid_columnconfigure(0, weight=1)
+tab2.grid_columnconfigure(1, weight=2)
+tab2.grid_columnconfigure(2, weight=1)
+tab2.grid_columnconfigure(3, weight=1)
+tab2.grid_columnconfigure(4, weight=1)
+tab2.grid_rowconfigure(7, weight=1)
 
 
 for col in ("Item", "Quantity", "Price"):
@@ -158,13 +174,13 @@ def search(event):
         if query in str(row[0]).lower(): 
             tree.insert("", "end", values=row, iid=str(row_index))
 
-label = tk.Label(tab1, text="Search", bg="AntiqueWhite2", font="Times 11")
-label.grid(row=6, column=0, pady=5, sticky="w")
-entry = tk.Entry(tab1, font="Times 11", justify="right")
+label = tk.Label(tab2, text="Search", bg="AntiqueWhite2", font="Times 11")
+label.grid(row=6, column=0, pady=10, sticky="w")
+entry = tk.Entry(tab2, font="Times 11", justify="left")
 entry.grid(row=6, column=1, columnspan=4, pady=5, sticky="we")
 entry.bind("<KeyRelease>", search)
 
-tab1.grid_columnconfigure(1, weight=1)  # Make the entry column adjustable
+tab2.grid_columnconfigure(1, weight=1)  
 view_data()
 
 
