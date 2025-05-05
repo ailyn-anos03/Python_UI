@@ -14,10 +14,13 @@ notebook = ttk.Notebook(window)
 tab1 = tk.Frame(notebook, bg="AntiqueWhite2")
 tab2 = tk.Frame(notebook, bg="AntiqueWhite2")
 tab3 = tk.Frame(notebook, bg="AntiqueWhite2")
+tab4 = tk.Frame(notebook, bg="AntiqueWhite2")
+
 
 notebook.add(tab1, text="Home")
 notebook.add(tab2, text="Input")
 notebook.add(tab3, text="Hisory")
+notebook.add(tab4, text="Inbox")  
 style = ttk.Style()
 style.theme_use("clam")  
 
@@ -63,15 +66,15 @@ def add_item():
 def view_data():
     tree.delete(*tree.get_children())
     for row_index, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
-        tree.insert("", "end", values=row, iid=str(row_index))  # Assign row index as ID
+        tree.insert("", "end", values=row, iid=str(row_index))  
 def delete_item():
     global selected_item_index
     selected = tree.selection()
     if selected:
-        row_index = int(selected[0])  # Get row index
-        ws.delete_rows(row_index)  # Remove correct row
+        row_index = int(selected[0])  #row index
+        ws.delete_rows(row_index)  
         wb.save("inventory.xlsx")
-        tree.delete(selected[0])  # Remove from UI5
+        tree.delete(selected[0])  
         selected_item_index = None  # Reset after deletion
         update_total()  # Update total after deleting an item
         selected_item_index = None  # Reset after deletion
@@ -155,7 +158,7 @@ style.configure("Treeview.Heading", foreground="black", background="pink3")
 tree.grid(row=7, column=0, columnspan=5, sticky="nsew")
 
 # Configure column and row weights to make widgets stretchable
-tab2.grid_columnconfigure(0, weight=1)
+tab2.grid_columnconfigure(0, weight=1)  
 tab2.grid_columnconfigure(1, weight=2)
 tab2.grid_columnconfigure(2, weight=1)
 tab2.grid_columnconfigure(3, weight=1)
