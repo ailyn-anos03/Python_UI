@@ -6,28 +6,28 @@ from tkinter import messagebox
 
 window = tk.Tk()
 window.title("Inventory Manager")
-# window.title("Inventory Management")
 window.configure(bg="AntiqueWhite2")
 
-notebook = ttk.Notebook(window)
+style = ttk.Style()
+style.configure('lefttab.TNotebook', tabposition='ws')  # Set tabs to the left side
+notebook = ttk.Notebook(window, style='lefttab.TNotebook')
 
 tab1 = tk.Frame(notebook, bg="AntiqueWhite2")
 tab2 = tk.Frame(notebook, bg="AntiqueWhite2")
 tab3 = tk.Frame(notebook, bg="AntiqueWhite2")
 tab4 = tk.Frame(notebook, bg="AntiqueWhite2")
 
-
 notebook.add(tab1, text="Home")
 notebook.add(tab2, text="Input")
-notebook.add(tab3, text="Hisory")
-notebook.add(tab4, text="Inbox")  
-style = ttk.Style()
+notebook.add(tab3, text="History")
+notebook.add(tab4, text="Inbox")
+
 style.theme_use("clam")  
 
 # Configure the notebook tabs
 style.configure("TNotebook", background="RosyBrown3", bordercolor="black")  
 style.configure("TNotebook.Tab", background="AntiqueWhite3", foreground="black")
-style.map("TNotebook.Tab", background=[("selected", "AntiqueWhite2")], foreground=[("selected", "black")])  
+style.map("TNotebook.Tab", background=[("selected", "AntiqueWhite2")], foreground=[("selected", "black")])
 
 notebook.grid(sticky="nsew")
 
@@ -221,7 +221,7 @@ def update_total():
 
 # Tab 3 - History
 
-label2 = tk.Label(tab3, text="History", bg="AntiqueWhite2", font="Arial 14 bold")
+label2 = tk.Label(tab3, text="History", bg="AntiqueWhite2", font="Arial 14 bold", justify="center")
 label2.grid(row=0, column=0, padx=10, pady=10)
 
 history_tree = ttk.Treeview(tab3, columns=("Action", "Item", "Quantity", "Price", "Timestamp"), show="headings")
@@ -278,6 +278,22 @@ tk.Button(tab2, text="Update", command=update_item_with_logging, bg="AntiqueWhit
 # Load history data into the history_tree
 for row in history_ws.iter_rows(min_row=2, values_only=True):
     history_tree.insert("", "end", values=row)
+
+def search_history(event):
+    query = history_entry.get().lower()
+    history_tree.delete(*history_tree.get_children())  
+
+    for row_index, row in enumerate(history_ws.iter_rows(min_row=2, values_only=True), start=2):
+        if query in " ".join(map(str, row)).lower(): 
+            history_tree.insert("", "end", values=row, iid=str(row_index))
+
+history_label = tk.Label(tab3, text="Search History", bg="AntiqueWhite2", font="Times 11")
+history_label.grid(row=2, column=0, pady=10, sticky="w")
+history_entry = tk.Entry(tab3, font="Times 11", justify="left")
+history_entry.grid(row=2, column=1, columnspan=4, pady=5, sticky="we")
+history_entry.bind("<KeyRelease>", search_history)
+
+tab3.grid_columnconfigure(1, weight=1)
 
 view_data()
 update_total()
