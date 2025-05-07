@@ -5,28 +5,35 @@ from datetime import datetime
 from tkinter import messagebox, simpledialog
 import os
 
-EXCEL_FILE = 'credentials.xlsx'
+EXCEL_FILE = 'inventory.xlsx'
 
 def log_login_time(username):
-    history_file = "login_history.xlsx"
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    if not os.path.exists(history_file):
-        wb = Workbook() 
+    try:
+        wb = load_workbook("inventory.xlsx")
+    except FileNotFoundError:
+        wb = Workbook()
         ws = wb.active
+        ws.title = "LoginHistory"
         ws.append(["Username", "Timestamp"])
-        wb.save(history_file)
+        wb.save("inventory.xlsx")
 
-    wb = load_workbook(history_file)
-    ws = wb.active
-    ws.append([username, now])
-    wb.save(history_file)
+    if "LoginHistory" not in wb.sheetnames:
+        login_ws = wb.create_sheet("LoginHistory")
+        login_ws.append(["Username", "Timestamp"])
+    else:
+        login_ws = wb["LoginHistory"]
+
+    login_ws.append([username, now])
+    wb.save("inventory.xlsx")
     wb.close()
 
 def init_credentials_file():
     if not os.path.exists(EXCEL_FILE):
         wb = Workbook()
         ws = wb.active
+        ws.title = "RegisteredUsers"
         ws.append(["Username", "Password"])
         ws.append(["admin", "admin123"])
         wb.save(EXCEL_FILE)
@@ -51,27 +58,50 @@ def user_exists(username):
     wb.close()
     return False
 
-def register():
-    user = reg_username.get().strip()
-    pwd = reg_password.get().strip()
 
     if not user or not pwd:
         messagebox.showwarning("Input Error", "Please fill in both fields.")
         return
 
-    if user_exists(user):
-        messagebox.showerror("Error", "Username already exists.")
+    # Check if the user exists in the "RegisteredUsers" worksheet
+    wb = load_workbook(EXCEL_FILE)
+    if "RegisteredUsers" not in wb.sheetnames:
+        ws = wb.create_sheet("RegisteredUsers")
+        ws.append(["Username", "Password"])  # Add headers
+        wb.save(EXCEL_FILE)
     else:
-        register_user(user, pwd)
-        messagebox.showinfo("Success", "User registered successfully!")
-        show_login_page()
+        ws = wb["RegisteredUsers"]
+
+    for row in ws.iter_rows(min_row=2, values_only=True):
+        if row[0] == user:
+            wb.close()
+            messagebox.showerror("Error", "Username already exists.")
+            return
+
+    # Register the user in the "RegisteredUsers" worksheet
+    ws.append([user, pwd])
+    wb.save(EXCEL_FILE)
+    wb.close()
+
+    messagebox.showinfo("Success", "User registered successfully!")
+    show_login_page()
 
 def register_user(username, password):
     wb = load_workbook(EXCEL_FILE)
-    ws = wb.active
+    
+    # Check if "RegisteredUsers" sheet exists, otherwise create it
+    if "RegisteredUsers" not in wb.sheetnames:
+        ws = wb.create_sheet("RegisteredUsers")
+        ws.append(["Username", "Password"])  # Add headers
+    else:
+        ws = wb["RegisteredUsers"]
+    
     ws.append([username, password])
     wb.save(EXCEL_FILE)
     wb.close()
+
+# Initialize global variables
+current_user = None
 
 def login():
     global current_user
@@ -82,40 +112,54 @@ def login():
         messagebox.showwarning("Input Error", "Please fill in both fields.")
         return
 
-    if validate_login(user, pwd):
-        current_user = user
-        log_login_time(user)
-        messagebox.showinfo("Login Success", f"Welcome, {user}!")
-        inventoryWindow()
-    else:
-        messagebox.showerror("Login Failed", "Invalid credentials.")
+    # Validate login against the "RegisteredUsers" sheet
+    try:
+        wb = load_workbook(EXCEL_FILE)
+        if "RegisteredUsers" in wb.sheetnames:
+            ws = wb["RegisteredUsers"]
+            for row in ws.iter_rows(min_row=2, values_only=True):
+                if row[0] == user and row[1] == pwd:
+                    current_user = user
+                    log_login_time(user)
+                    messagebox.showinfo("Login Success", f"Welcome, {user}!")
+                    inventoryWindow()
+                    wb.close()
+                    return
+        wb.close()
+    except FileNotFoundError:
+        messagebox.showerror("Error", "Credentials file not found.")
+
+    messagebox.showerror("Login Failed", "Invalid credentials.")
 
 def show_login_page():
     if 'register_frame' in globals() and 'login_frame' in globals():
-        register_frame.grid_forget()
         login_frame.grid()
     else:
         messagebox.showerror("Error", "Frames are not initialized.")
 
 
-def show_register_page():
-    if 'login_frame' in globals() and 'register_frame' in globals():
-        login_frame.grid_forget()
-        register_frame.grid()
-    else:
-        messagebox.showerror("Error", "Frames are not initialized.")
+# def show_register_page():
+#     if 'login_frame' in globals() and 'register_frame' in globals():
+#         login_frame.grid_forget()
+#         register_frame.grid()
+#     else:
+#         messagebox.showerror("Error", "Frames are not initialized.")
 
 def inventoryWindow():
     root.withdraw()
     PASSWORD = "admin123"
+   
     def on_tab_changed(event):
         selected_tab = event.widget.index("current")
+    
     
     # If user selects the protected tab (index 1)
         if selected_tab == 4 and not access_granted[0]:
             pwd = simpledialog.askstring("Password Required", "Enter password:", show="*")
             if pwd == PASSWORD:
-                access_granted[0] = True
+                # access_granted[0] = True
+                tab5 = tk.Frame(notebook, bg="AntiqueWhite2")
+                
             else:
                 messagebox.showerror("Access Denied", "Incorrect password.")
                 notebook.select(0)  # Revert to first tab
@@ -127,12 +171,12 @@ def inventoryWindow():
     Management.configure(bg="AntiqueWhite2")
 
     style = ttk.Style()
-    style.configure('lefttab.TNotebook', tabposition='ws', relief="flat")  # Set tabs to the left side
+    style.configure('lefttab.TNotebook', tabposition='ws')  # Set tabs to the left side
     notebook = ttk.Notebook(Management, style='lefttab.TNotebook')
 
     # Add a second notebook for bottom tabs
     bottom_style = ttk.Style()
-    bottom_style.configure('bottomtab.TNotebook', tabposition='s', relief="flat")  # Set tabs to the bottom
+    bottom_style.configure('bottomtab.TNotebook', tabposition='s')  # Set tabs to the bottom
     bottom_notebook = ttk.Notebook(Management, style='bottomtab.TNotebook')
 
     tab1 = tk.Frame(notebook, bg="AntiqueWhite2")
@@ -140,15 +184,19 @@ def inventoryWindow():
     tab3 = tk.Frame(notebook, bg="AntiqueWhite2")
     tab4 = tk.Frame(notebook, bg="AntiqueWhite2")
     tab5 = tk.Frame(notebook, bg="AntiqueWhite2")
-   
 
-    
+    notebook.add(tab1, text="Home")
+    notebook.add(tab2, text="Input")
+    notebook.add(tab3, text="History")
+    notebook.add(tab4, text="Inbox")
+    notebook.add(tab5, text="User Management (ADMIN Only)")
 
     style.theme_use("clam")
 
-    style.configure("TNotebook", background="RosyBrown3")  
-    style.configure("TNotebook.Tab", background="RosyBrown3", foreground="black")
+    style.configure("TNotebook", background="RosyBrown2")  # Background of the notebook
+    style.configure("TNotebook.Tab", background="AntiqueWhite3", foreground="black")
     style.map("TNotebook.Tab", background=[("selected", "AntiqueWhite2")], foreground=[("selected", "black")])
+
 
     notebook.grid(sticky="nsew")
     style.configure('lefttab.TNotebook', tabposition='wn')  # Set tabs to the left side
@@ -168,33 +216,36 @@ def inventoryWindow():
 
     ws = wb.active
     selected_item_index = None 
-
     def add_item():
         item, quantity, price = entry_item.get(), entry_quantity.get(), entry_price.get()
         if item and quantity and price:
-            ws.insert_rows(2)  # Insert a new row at the top (after headers)
-            ws.cell(row=2, column=1, value=item)
-            ws.cell(row=2, column=2, value=quantity)
-            ws.cell(row=2, column=3, value=price)
+            ws.append([item, quantity, price])  # Append the new row at the end
             wb.save("inventory.xlsx")
-            tree.insert("", "0", values=(item, quantity, price))  # Insert at the top of the Treeview
+            tree.insert("", "end", values=(item, quantity, price))  # Insert at the end of the Treeview
+            log_action("Add", item, quantity, price)  # Log action to history
+            log_action_to_inbox("Add", item, quantity, price)  # Log action to inbox
             clear_entries()
             update_total()  # Update total after adding an item
+
     def view_data():
         tree.delete(*tree.get_children())
         for row_index, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
             tree.insert("", "end", values=row, iid=str(row_index))  
+
     def delete_item():
         global selected_item_index
         selected = tree.selection()
         if selected:
-            row_index = int(selected[0])  #row index
+            row_index = int(selected[0])  # Row index
+            values = tree.item(selected[0], "values")
             ws.delete_rows(row_index)  
             wb.save("inventory.xlsx")
             tree.delete(selected[0])  
+            log_action("Delete", values[0], values[1], values[2])  # Log action to history
+            log_action_to_inbox("Delete", values[0], values[1], values[2])  # Log action to inbox
             selected_item_index = None  # Reset after deletion
             update_total()  # Update total after deleting an item
-            selected_item_index = None  # Reset after deletion   
+
     def edit_item():
         global selected_item_index
         selected = tree.selection()
@@ -206,6 +257,7 @@ def inventoryWindow():
             entry_quantity.delete(0, tk.END)
             entry_quantity.insert(0, values[1])
             entry_price.delete(0, tk.END)
+            entry_price.insert(0, values[2])
 
     def update_item():
         global selected_item_index
@@ -217,11 +269,11 @@ def inventoryWindow():
                 ws[selected_item_index][1].value = new_values[1]
                 ws[selected_item_index][2].value = new_values[2]
                 wb.save("inventory.xlsx")
+                log_action("Update", new_values[0], new_values[1], new_values[2])  # Log action to history
+                log_action_to_inbox("Update", new_values[0], new_values[1], new_values[2])  # Log action to inbox
                 clear_entries()
                 selected_item_index = None 
                 update_total()  # Update total after updating an item
-                clear_entries()
-                selected_item_index = None
 
     def clear_entries():
         entry_item.delete(0, tk.END)
@@ -238,15 +290,14 @@ def inventoryWindow():
     label1.grid(row=0, column=0, padx=10, pady=10)
 
     tk.Button(tab1, text="Logout",command=logout, font="Arial 10").grid(row=0, column=5, pady=5, sticky="w")
+   
+    
 
-    button_list = [
-        ("Inventory", lambda: notebook.select(tab2), "raised", "RosyBrown2"),
-        ("History", lambda: notebook.select(tab3), "raised", "RosyBrown2"),
-    ]
+    
+    # Button to process selected item
+    
 
-    for i, (text, command, relief, bg) in enumerate(button_list, start=1):
-        button = tk.Button(tab1, text=text, command=command, relief=relief, bg=bg)
-        button.grid(row=i, column=0, padx=10, pady=5, sticky="we")
+   
  
     #Tab 2 - Input
 
@@ -300,7 +351,43 @@ def inventoryWindow():
     tab2.grid_columnconfigure(1, weight=1)  
     view_data()
 
+    
+
+
     def update_total():
+        def deduct_quantity():
+            selected = tree.selection()
+            if selected:
+                values = tree.item(selected[0], "values")
+                item_name = values[0]
+                current_quantity = values[1]
+
+                try:
+                    current_quantity = int(current_quantity)
+                    deduction = int(spinbox_deduction.get())
+                    if deduction > current_quantity:
+                        messagebox.showerror("Error", "Deduction exceeds current quantity.")
+                        return
+
+                    new_quantity = current_quantity - deduction
+                    ws[int(selected[0])][1].value = new_quantity  # Update quantity in Excel
+                    wb.save("inventory.xlsx")
+                    tree.item(selected[0], values=(item_name, new_quantity, values[2]))  # Update Treeview
+                    update_total()  # Update total after deduction
+                    messagebox.showinfo("Success", f"Deducted {deduction} from {item_name}.")
+                    
+                    # Log action to history and inbox
+                    log_action("Deduct", item_name, deduction, values[2])
+                    log_action_to_inbox("Deduct", item_name, deduction, values[2])
+                except ValueError:
+                    messagebox.showerror("Error", "Invalid quantity or deduction value.")
+            else:
+                messagebox.showwarning("Warning", "No item selected.")
+
+        tk.Label(tab2, text="Deduct Quantity", bg="AntiqueWhite2", font="Calibri 11").grid(row=5, column=0, sticky="w")
+        spinbox_deduction = tk.Spinbox(tab2, from_=0, to=1000, increment=1, font="Times 11", justify="left")
+        spinbox_deduction.grid(row=5, column=1, sticky="we")
+        tk.Button(tab2, text="Deduct", command=deduct_quantity, bg="AntiqueWhite2", relief="flat", font="Arial 10").grid(row=5, column=2, pady=5, sticky="we")
         total = 0
         for row_index, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
             if row[1] is not None and row[2] is not None:  
@@ -402,8 +489,135 @@ def inventoryWindow():
 
     view_data()
     update_total()
+
+    # Tab 4 - Inbox
+    label3 = tk.Label(tab4, text="Inbox", bg="AntiqueWhite2", font="Arial 14 bold")
+    label3.grid(row=0, column=0, padx=10, pady=10)
+
+    inbox_tree = ttk.Treeview(tab4, columns=("Sender", "Message", "Timestamp"), show="headings")
+    inbox_tree.grid(row=1, column=0, columnspan=5, sticky="nsew")
+
+    for col in ("Sender", "Message", "Timestamp"):
+        inbox_tree.heading(col, text=col)
+
+    # Create a new worksheet for Inbox if it doesn't exist
+    if "Inbox" not in wb.sheetnames:
+        inbox_ws = wb.create_sheet("Inbox")
+        inbox_ws.append(["Sender", "Message", "Timestamp"])
+        wb.save("inventory.xlsx")
+    else:
+        inbox_ws = wb["Inbox"]
+
+    # Function to display messages in the inbox treeview
+    def display_inbox_message(sender, message, timestamp):
+        inbox_tree.insert("", "end", values=(sender, message, timestamp))
+
+    # Load initial inbox data
+    def load_inbox_data():
+        inbox_tree.delete(*inbox_tree.get_children())
+        for row in inbox_ws.iter_rows(min_row=2, values_only=True):
+            display_inbox_message(row[0], row[1], row[2])
+
+    load_inbox_data()
+
+    tab4.grid_columnconfigure(0, weight=1)
+    tab4.grid_rowconfigure(1, weight=1)
+
+    # Function to log messages to the Inbox worksheet
+    def log_inbox_message(sender, message):
+        global current_user
+        sender = current_user if current_user else "System"
+        timestamp = datetime.now().strftime("%d %b %Y, %I:%M %p")  # User-friendly timestamp format
+        inbox_ws.append([sender, message, timestamp])
+        wb.save("inventory.xlsx")
+        display_inbox_message(sender, message, timestamp)
+
+    # Automatically log messages to Inbox based on history actions
+    def log_action_to_inbox(action, item, quantity, price):
+        message = f"{action} performed on item '{item}' with quantity '{quantity}' and price '{price}'."
+        log_inbox_message("System", message)
+
+    # Update the history logging functions to also log to the Inbox
+    def add_item_with_logging():
+        item, quantity, price = entry_item.get(), entry_quantity.get(), entry_price.get()
+        add_item()  # Call the original add_item function
+        if item and quantity and price:
+            log_action("Add", item, quantity, price)
+            log_action_to_inbox("Add", item, quantity, price)
+
+    def delete_item_with_logging():
+        global selected_item_index
+        selected = tree.selection()
+        if selected:
+            values = tree.item(selected[0], "values")
+            delete_item()  # Call the original delete_item function
+            log_action("Delete", values[0], values[1], values[2])
+            log_action_to_inbox("Delete", values[0], values[1], values[2])
+
+    def update_item_with_logging():
+        global selected_item_index
+        if selected_item_index:
+            new_values = (entry_item.get(), entry_quantity.get(), entry_price.get())
+            update_item()  # Call the original update_item function
+            if all(new_values):
+                log_action("Update", new_values[0], new_values[1], new_values[2])
+                log_action_to_inbox("Update", new_values[0], new_values[1], new_values[2])
+
+    # Automatically update the Inbox when a new entry is added to the History worksheet
+    def sync_inbox_with_history():
+        history_rows = list(history_ws.iter_rows(min_row=2, values_only=True))
+        inbox_rows = list(inbox_ws.iter_rows(min_row=2, values_only=True))
+
+        # Add missing history rows to the Inbox
+        for row in history_rows[len(inbox_rows):]:
+            action, item, quantity, price, timestamp = row
+            log_action_to_inbox(action, item, quantity, price)
+
+    # Call sync function whenever the history is updated
+    sync_inbox_with_history()
+
+    # Search functionality for the Inbox
+    def search_inbox():
+        query = inbox_entry.get().lower()
+        inbox_tree.delete(*inbox_tree.get_children())
+
+        for row in inbox_ws.iter_rows(min_row=2, values_only=True):
+            if query in " ".join(map(str, row)).lower():
+                inbox_tree.insert("", "end", values=row)
+
+    inbox_label = tk.Label(tab4, text="Search Inbox", bg="AntiqueWhite2", font="Times 11")
+    inbox_label.grid(row=2, column=0, pady=10, sticky="w")
+    inbox_entry = tk.Entry(tab4, font="Times 11", justify="left")
+    inbox_entry.grid(row=2, column=1, columnspan=4, pady=5, sticky="we")
+    inbox_entry.bind("<KeyRelease>", lambda _: search_inbox())
+
     
-init_credentials_file()
+    
+
+    def create_widgets(self):
+            self.tab5 = tk.Frame(self.parent, bg="AntiqueWhite2")
+            self.tab5.pack(fill="both", expand=True)
+
+            tk.Label(self.tab5, text="User Management (Admin Only)", font=("Arial", 16), bg="AntiqueWhite2").grid(row=0, column=0, columnspan=2, pady=15)
+            
+            tk.Label(self.tab5, text="Username", bg="AntiqueWhite2", font=("Arial", 12)).grid(row=1, column=0, padx=15, pady=10, sticky="e")
+            self.reg_username = tk.Entry(self.tab5, font=("Arial", 12))
+            self.reg_username.grid(row=1, column=1, padx=15, pady=10, sticky="w")
+
+            tk.Label(self.tab5, text="Password", bg="AntiqueWhite2", font=("Arial", 12)).grid(row=2, column=0, padx=15, pady=10, sticky="e")
+            self.reg_password = tk.Entry(self.tab5, show='*', font=("Arial", 12))
+            self.reg_password.grid(row=2, column=1, padx=15, pady=10, sticky="w")
+
+
+    # Transparent buttons
+    # tk.Button(tab5, text="Submit", command=register, font=("Arial", 12), bg="AntiqueWhite2", relief="flat").grid(row=3, column=0, columnspan=2, pady=15)
+    tk.Button(tab5, text="Back to Home", command=lambda: notebook.select(0), font=("Arial", 12), bg="AntiqueWhite2", relief="flat").grid(row=4, column=0, columnspan=2)
+
+# Call the function to populate the admin tab
+    create_widgets()
+    
+    
+
 
 root = tk.Tk()
 root.title("Login & Admin Management")
@@ -415,28 +629,33 @@ root.resizable(False, False)
 login_frame = tk.Frame(root, bg="AntiqueWhite2")
 login_frame.grid(row=0, column=0, sticky="nsew")
 
-tk.Label(login_frame, text="Login", font=("Arial", 14), bg="AntiqueWhite2").grid(row=0, column=0, columnspan=2, pady=10)
-tk.Label(login_frame, text="Username", bg="AntiqueWhite2").grid(row=1, column=0, padx=10, pady=5, sticky="e")
-login_username = tk.Entry(login_frame)
-login_username.grid(row=1, column=1, padx=10, pady=5, sticky="w")
-tk.Label(login_frame, text="Password", bg="AntiqueWhite2").grid(row=2, column=0, padx=10, pady=5, sticky="e")
-login_password = tk.Entry(login_frame, show='*')
-login_password.grid(row=2, column=1, padx=10, pady=5, sticky="w")
-tk.Button(login_frame, text="Login", command=login).grid(row=3, column=0, columnspan=2, pady=10)
-tk.Button(login_frame, text="Register", command=show_register_page).grid(row=4, column=0, columnspan=2)
+tk.Label(login_frame, text="Login", font=("Arial", 16), bg="AntiqueWhite2").grid(row=0, column=0, columnspan=2, pady=15)
 
-# ---------------------- Register Frame ---------------------
-register_frame = tk.Frame(root, bg="AntiqueWhite2")
-register_frame.grid(row=0, column=0, sticky="nsew")
+def on_entry_click(event, entry, placeholder):
+    if entry.get() == placeholder:
+        entry.delete(0, tk.END)
+        entry.config(fg="black")
 
-tk.Label(register_frame, text="Register", font=("Arial", 14), bg="AntiqueWhite2").grid(row=0, column=0, columnspan=2, pady=10)
-tk.Label(register_frame, text="Username", bg="AntiqueWhite2").grid(row=1, column=0, padx=10, pady=5, sticky="e")
-reg_username = tk.Entry(register_frame)
-reg_username.grid(row=1, column=1, padx=10, pady=5, sticky="w")
-tk.Label(register_frame, text="Password", bg="AntiqueWhite2").grid(row=2, column=0, padx=10, pady=5, sticky="e")
-reg_password = tk.Entry(register_frame, show='*')
-reg_password.grid(row=2, column=1, padx=10, pady=5, sticky="w")
-tk.Button(register_frame, text="Submit", command=register).grid(row=3, column=0, columnspan=2, pady=10)
-tk.Button(register_frame, text="Back to Login", command=show_login_page).grid(row=4, column=0, columnspan=2)
+def on_focusout(event, entry, placeholder):
+    if entry.get() == "":
+        entry.insert(0, placeholder)
+        entry.config(fg="grey")
+
+login_username = tk.Entry(login_frame, font=("Arial", 12), fg="grey")
+login_username.insert(0, "Username")
+login_username.bind("<FocusIn>", lambda event: on_entry_click(event, login_username, "Username"))
+login_username.bind("<FocusOut>", lambda event: on_focusout(event, login_username, "Username"))
+login_username.grid(row=1, column=0, columnspan=2, padx=15, pady=10, sticky="we")
+
+login_password = tk.Entry(login_frame, font=("Arial", 12), fg="grey", show="")
+login_password.insert(0, "Password")
+login_password.bind("<FocusIn>", lambda event: on_entry_click(event, login_password, "Password"))
+login_password.bind("<FocusOut>", lambda event: on_focusout(event, login_password, "Password"))
+login_password.grid(row=2, column=0, columnspan=2, padx=15, pady=10, sticky="we")
+
+# Transparent buttons
+tk.Button(login_frame, text="Login", command=login, font=("Arial", 12), bg="AntiqueWhite2", relief="flat").grid(row=3, column=0, columnspan=2, pady=15)
+# tk.Button(login_frame, text="Register", command=show_register_page, font=("Arial", 12), bg="AntiqueWhite2", relief="flat").grid(row=4, column=0, columnspan=2)
+
 
 root.mainloop()
