@@ -7,6 +7,8 @@ import os
 
 EXCEL_FILE = 'inventory.xlsx'
 
+
+
 def log_login_time(username):
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -57,6 +59,13 @@ def user_exists(username):
             return True
     wb.close()
     return False
+# def show_register_page():
+#     if 'login_frame' in globals() and 'register_frame' in globals():
+#         login_frame.grid_forget()
+#         register_frame.grid()
+#     else:
+#         messagebox.showerror("Error", "Frames are not initialized.")
+
 
 
     if not user or not pwd:
@@ -92,7 +101,8 @@ def register_user(username, password):
     # Check if "RegisteredUsers" sheet exists, otherwise create it
     if "RegisteredUsers" not in wb.sheetnames:
         ws = wb.create_sheet("RegisteredUsers")
-        ws.append(["Username", "Password"])  # Add headers
+        ws.append(["Username", "Password"])
+        
     else:
         ws = wb["RegisteredUsers"]
     
@@ -138,12 +148,7 @@ def show_login_page():
         messagebox.showerror("Error", "Frames are not initialized.")
 
 
-# def show_register_page():
-#     if 'login_frame' in globals() and 'register_frame' in globals():
-#         login_frame.grid_forget()
-#         register_frame.grid()
-#     else:
-#         messagebox.showerror("Error", "Frames are not initialized.")
+
 
 def inventoryWindow():
     root.withdraw()
@@ -157,9 +162,157 @@ def inventoryWindow():
         if selected_tab == 4 and not access_granted[0]:
             pwd = simpledialog.askstring("Password Required", "Enter password:", show="*")
             if pwd == PASSWORD:
-                # access_granted[0] = True
-                tab5 = tk.Frame(notebook, bg="AntiqueWhite2")
+                access_granted[0] = True
                 
+
+                def register():
+                    user = reg_username.get().strip()
+                    pwd = reg_password.get().strip()
+
+                    if not user or not pwd:
+                        messagebox.showwarning("Input Error", "Please fill in both fields.")
+                        return
+
+                    # Check if the user exists in the "RegisteredUsers" worksheet
+                    wb = load_workbook(EXCEL_FILE)
+                    if "RegisteredUsers" not in wb.sheetnames:
+                        ws = wb.create_sheet("RegisteredUsers")
+                        ws.append(["Username", "Password"])  # Add headers
+                        wb.save(EXCEL_FILE)
+                    else:
+                        ws = wb["RegisteredUsers"]
+
+                    for row in ws.iter_rows(min_row=2, values_only=True):
+                        if row[0] == user:
+                            wb.close()
+                            messagebox.showerror("Error", "Username already exists.")
+                            return True
+
+                    # Register the user in the "RegisteredUsers" worksheet
+                    ws.append([user, pwd])
+                    wb.save(EXCEL_FILE)
+                    wb.close()
+
+                    messagebox.showinfo("Success", "User registered successfully!")
+
+            
+                
+                # TAb 5
+
+                register_frame = tk.Frame(tab5, bg="AntiqueWhite2")
+                register_frame.grid(row=0, column=0, sticky="nsew")
+
+                tk.Label(tab5, text="Register", font=("Arial", 16), bg="AntiqueWhite2").grid(row=0, column=0, columnspan=2, pady=15)
+                tk.Label(tab5, text="Username", bg="AntiqueWhite2", font=("Arial", 12)).grid(row=1, column=0, padx=15, pady=10, sticky="w")
+                reg_username = tk.Entry(tab5, font=("Arial", 12))
+                reg_username.grid(row=1, column=1, padx=15, pady=10, sticky="we")
+                tk.Label(tab5, text="Password", bg="AntiqueWhite2", font=("Arial", 12)).grid(row=2, column=0, padx=15, pady=10, sticky="w")
+                reg_password = tk.Entry(tab5, show='*', font=("Arial", 12))
+                reg_password.grid(row=2, column=1, padx=15, pady=10, sticky="we")
+
+                # Transparent buttons
+                tk.Button(tab5, text="Submit", command=register, font=("Arial", 12), bg="AntiqueWhite2", relief="ridge").grid(row=1, column=3, columnspan=2, pady=15)
+                tk.Button(tab5, text="Back to Login", command=show_login_page, font=("Arial", 12), bg="AntiqueWhite2", relief="ridge").grid(row=2, column=3, columnspan=2)
+                def add_item_user():
+                    pas, user = reg_password.get(), reg_username.get()
+                    if pas and user :
+                            ws.append([pas, user])  # Append the new row at the end
+                            wb.save("inventory.xlsx")
+                            tree.insert("", "end", values=(pas, user))  # Insert at the end of the Treeview
+                    
+                        
+                            clear_entries()
+                            update_total()  # Update total after adding an item
+
+                def view_data_user():
+                    user_tree.delete(*user_tree.get_children())
+                    for row_index, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+                        user_tree.insert("", "end", values=row, iid=str(row_index))  
+
+                def delete_item_user():
+                    global selected_item_index
+                    selected = user_tree.selection()
+                    if selected:
+                        row_index = int(selected[0])  # Row index
+                        values = user_tree.item(selected[0], "values")
+                        ws.delete_rows(row_index)  
+                        wb.save("inventory.xlsx")
+                        user_tree.delete(selected[0])  
+                    
+                        selected_item_index = None  # Reset after deletion
+                        update_total()  # Update total after deleting an item
+
+                def edit_item_user():
+                    global selected_item_index
+                    selected = user_tree.selection()
+                    if selected:
+                        selected_item_index = int(selected[0])  # Store row index
+                        values = tree.item(selected[0], "values")
+                        reg_password.delete(0, tk.END)
+                        reg_password.insert(0, values[0])
+                        reg_username.delete(0, tk.END)
+                        reg_username.insert(0, values[1])
+                        
+
+                def update_item_user():
+                    global selected_item_index
+                    if selected_item_index:
+                        new_values = (entry_item.get(), entry_quantity.get(), entry_price.get())
+                        if all(new_values):
+                            tree.item(str(selected_item_index), values=new_values) 
+                            ws[selected_item_index][0].value = new_values[0]  
+                            ws[selected_item_index][1].value = new_values[1]
+                           
+                            wb.save("inventory.xlsx")
+                            
+                            clear_entries()
+                            selected_item_index = None 
+                            update_total()  # Update total after updating an item
+
+                def clear_entries_user():
+                    reg_password.delete(0, tk.END)
+                    reg_username.delete(0, tk.END)
+
+                user_tree = ttk.Treeview(tab5, columns=("Username", "Password"), show="headings")
+                style = ttk.Style()
+                style.theme_use("clam")
+                style.configure("Treeview.Heading", foreground="black", background="pink3")
+                user_tree.grid(row=5, column=0, columnspan=5, sticky="nsew")
+
+                tab5.grid_columnconfigure(0, weight=1)  
+                tab5.grid_columnconfigure(1, weight=2)
+                tab5.grid_columnconfigure(2, weight=1)
+                tab5.grid_columnconfigure(3, weight=1)
+                tab5.grid_columnconfigure(4, weight=1)
+                tab5.grid_rowconfigure(7, weight=1)
+
+                
+
+                for col in ("Username", "Password"):
+                    user_tree.heading(col, text=col)
+                    user_tree.grid(row=5, column=0, columnspan=5)
+
+                    try:
+                        wb = load_workbook("inventory.xlsx")
+                    except FileNotFoundError:
+                        wb = Workbook()
+                        ws = wb.active
+                        ws.append("Username", "Password")  
+                        wb.save("inventory.xlsx")
+
+                        ws = wb.active
+                        selected_item_index = None 
+                
+                
+                
+                tk.Button(tab5, text="Add", command=add_item_user, bg="AntiqueWhite2", relief="flat", font="Arial 10").grid(row=4, column=0, pady=5, sticky="we")
+                tk.Button(tab5, text="Refresh", command=view_data_user, bg="AntiqueWhite2", relief="flat",font="Arial 10").grid(row=4, column=1, pady=5, sticky="we")
+                tk.Button(tab5, text="Edit", command=edit_item_user, bg="AntiqueWhite2", relief="flat",font="Arial 10").grid(row=4, column=2, pady=5, sticky="we")
+                tk.Button(tab5, text="Delete", command=delete_item_user, bg="AntiqueWhite2", relief="flat",font="Arial 10").grid(row=4, column=3, pady=5, sticky="we")
+                tk.Button(tab5, text="Update", command=update_item_user, bg="AntiqueWhite2", relief="flat",font="Arial 10").grid(row=4, column=4, pady=5, sticky="we")
+
+                view_data_user()  
+            
             else:
                 messagebox.showerror("Access Denied", "Incorrect password.")
                 notebook.select(0)  # Revert to first tab
@@ -184,13 +337,14 @@ def inventoryWindow():
     tab3 = tk.Frame(notebook, bg="AntiqueWhite2")
     tab4 = tk.Frame(notebook, bg="AntiqueWhite2")
     tab5 = tk.Frame(notebook, bg="AntiqueWhite2")
+                
 
     notebook.add(tab1, text="Home")
     notebook.add(tab2, text="Input")
     notebook.add(tab3, text="History")
     notebook.add(tab4, text="Inbox")
     notebook.add(tab5, text="User Management (ADMIN Only)")
-
+    
     style.theme_use("clam")
 
     style.configure("TNotebook", background="RosyBrown2")  # Background of the notebook
@@ -291,11 +445,7 @@ def inventoryWindow():
 
     tk.Button(tab1, text="Logout",command=logout, font="Arial 10").grid(row=0, column=5, pady=5, sticky="w")
    
-    
-
-    
-    # Button to process selected item
-    
+   
 
    
  
@@ -322,6 +472,8 @@ def inventoryWindow():
     style.theme_use("clam")
     style.configure("Treeview.Heading", foreground="black", background="pink3")
     tree.grid(row=7, column=0, columnspan=5, sticky="nsew")
+
+
 
     tab2.grid_columnconfigure(0, weight=1)  
     tab2.grid_columnconfigure(1, weight=2)
@@ -593,31 +745,18 @@ def inventoryWindow():
 
     
     
-
-    def create_widgets(self):
-            self.tab5 = tk.Frame(self.parent, bg="AntiqueWhite2")
-            self.tab5.pack(fill="both", expand=True)
-
-            tk.Label(self.tab5, text="User Management (Admin Only)", font=("Arial", 16), bg="AntiqueWhite2").grid(row=0, column=0, columnspan=2, pady=15)
-            
-            tk.Label(self.tab5, text="Username", bg="AntiqueWhite2", font=("Arial", 12)).grid(row=1, column=0, padx=15, pady=10, sticky="e")
-            self.reg_username = tk.Entry(self.tab5, font=("Arial", 12))
-            self.reg_username.grid(row=1, column=1, padx=15, pady=10, sticky="w")
-
-            tk.Label(self.tab5, text="Password", bg="AntiqueWhite2", font=("Arial", 12)).grid(row=2, column=0, padx=15, pady=10, sticky="e")
-            self.reg_password = tk.Entry(self.tab5, show='*', font=("Arial", 12))
-            self.reg_password.grid(row=2, column=1, padx=15, pady=10, sticky="w")
+   
 
 
-    # Transparent buttons
-    # tk.Button(tab5, text="Submit", command=register, font=("Arial", 12), bg="AntiqueWhite2", relief="flat").grid(row=3, column=0, columnspan=2, pady=15)
-    tk.Button(tab5, text="Back to Home", command=lambda: notebook.select(0), font=("Arial", 12), bg="AntiqueWhite2", relief="flat").grid(row=4, column=0, columnspan=2)
 
-# Call the function to populate the admin tab
-    create_widgets()
+
+
+
+    
+   
     
     
-
+init_credentials_file()
 
 root = tk.Tk()
 root.title("Login & Admin Management")
@@ -626,6 +765,7 @@ root.configure(bg="AntiqueWhite2")
 root.resizable(False, False)
 
 # ---------------------- Login Frame ---------------------
+
 login_frame = tk.Frame(root, bg="AntiqueWhite2")
 login_frame.grid(row=0, column=0, sticky="nsew")
 
